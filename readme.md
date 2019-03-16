@@ -4,7 +4,7 @@
 A basic command-line packet sniffer and injector for BSD-based systems (e.g.
 macOS). The goal of this project is that it:
 
-- Compiles with any C compiler
+- Compiles with any C compiler on any BSD-based system
 - Works on any BSD-based system that provides the `BPF` device (try `man bpf`)
 - Is written and architected in an extremely clean, readable, and thus
   referenceable way
