@@ -13,12 +13,12 @@
  * MACROS
  */
 
-/* Boolean Macros (because it makes things much more readable) */
+// Boolean Macros (because they makes things much more readable)
 #define BOOL unsigned int
 #define TRUE 1
 #define FALSE 0
 
-/* Function Macros */
+// Function Macros
 #define trace printf(APP_NAME ": "); printf
 
 #endif

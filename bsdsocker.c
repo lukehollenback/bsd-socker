@@ -20,19 +20,19 @@ int main(int argc, char **argv) {
     char buffer_char[11] = { 0 };
     struct ifreq bound_if;
 
-    /* Attempt to open the next available Berkley Packet Filter device (BPF) */
+    // Attempt to open the next available Berkley Packet Filter device (BPF)
     for (i = 0; i < MAX_BPF_DEVICES; i++) {
-        /* Generate the path to the next possible BPF */
+        // Generate the path to the next possible BPF
         sprintf(buffer_char, "/dev/bpf%i", i);
 
-        /* Attempt to open the next possible BPF; If we don't fail, we have
-        succeeded in finding an available one */
+        // Attempt to open the next possible BPF; If we don't fail, we have
+        //  succeeded in finding an available one
         bpf = open(buffer_char, O_RDWR);
         if (bpf != -1)
             break;
     }
 
-    if (i == 100) {
+    if (i == 100 && bpf == -1) {
         trace("Failed to open a BPF device after 100 tries.\n");
         exit(1);
     }
@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
         trace("Successfully opened the BPF device at %s.\n", buffer_char);
     }
 
-    /* Associate with a particular network interface */
+    // Associate with a particular network interface
     strcpy(bound_if.ifr_name, "en1");
     if(ioctl(bpf, BIOCSETIF, &bound_if) == -1) {
         trace("Failed to associate the BPF device with the network interface \"%s\". (%i: %s)\n", "en1", errno, strerror(errno));
@@ -50,9 +50,9 @@ int main(int argc, char **argv) {
         trace("Successfully associated the BPF device with the network interface \"%s\".\n", "en1");
     }
 
-    /* Turn on "immediate" mode (this means that blocking reads will return as
-    soon as new socket data is available rather than when the read buffer is
-    full or a timeout occurs) */
+    // Turn on "immediate" mode (this means that blocking reads will return as
+    //  soon as new socket data is available rather than when the read buffer is
+    //  full or a timeout occurs)
     buffer_int = 1;
     if (ioctl(bpf, BIOCIMMEDIATE, &buffer_int) == -1) {
         trace("Failed to turn on the BPF device's \"immediate\" mode. (%i: %s)\n", errno, strerror(errno));
@@ -62,8 +62,8 @@ int main(int argc, char **argv) {
         trace("Successfully turned on the BPF device's \"immediate\" mode.\n");
     }
 
-    /* Get the buffer length (so that we can traverse multiple entries when
-    reading from the BPF) */
+    // Get the buffer length (so that we can traverse multiple entries when
+    //  reading from the BPF)
     if (ioctl(bpf, BIOCGBLEN, &buffer_int) == -1) {
         trace("Failed to retrieve the BPF device's buffer length. (%i: %s)\n", errno, strerror(errno));
         exit(1);
@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
         trace("Successfully retrieved the BPF device's buffer length (%i bytes).\n", buffer_int);
     }
 
-    /* Clean up after ourselves */
+    // Clean up after ourselves
     close(bpf);
 
 #if 0

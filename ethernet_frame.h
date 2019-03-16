@@ -3,10 +3,12 @@
 
 #include "common.h"
 
-/* EthernetFrame represents the basic header of an ethernet frame (not an
-ethernet packet, thus no "Preamble" or "Delimiter" field). It doesn't
-inherrintely account for the VLAN-tag that may or may not be present in an
-ethernet frame, but its supporting functions do. */
+/**
+ * Represents the basic header of an ethernet frame (not an ethernet packet,
+ * thus no "Preamble" or "Delimiter" field). It doesn't inherrintely account for
+ * the VLAN-tag that may or may not be present in an ethernet frame, but its
+ * supporting functions do.
+ */
 typedef struct {
     unsigned char destination_mac_address[6];
     unsigned char source_mac_address[6];
@@ -14,8 +16,9 @@ typedef struct {
     unsigned char payload[4];
 } EthernetFrame;
 
-/* EthernetType is an enum to represent all the possible values of an ethernet
-frame's "EtherType" field. */
+/**
+ * Represents all the possible values of an ethernet frame's "EtherType" field.
+ */
 typedef enum {
     ET_IPV4         = 0x0800,
     ET_IPV6         = 0x86DD,
