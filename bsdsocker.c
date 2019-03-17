@@ -50,9 +50,10 @@ int main(int argc, char **argv) {
         trace("Successfully associated the BPF device with the network interface \"%s\".\n", "en1");
     }
 
-    // Turn on "immediate" mode (this means that blocking reads will return as
-    //  soon as new socket data is available rather than when the read buffer is
-    //  full or a timeout occurs)
+    // Turn on "immediate" mode
+    // NOTE: This means that blocking reads will return as soon as new socket
+    //  data is available rather than when the read buffer is full or a timeout
+    //  occurs.
     buffer_int = 1;
     if (ioctl(bpf, BIOCIMMEDIATE, &buffer_int) == -1) {
         trace("Failed to turn on the BPF device's \"immediate\" mode. (%i: %s)\n", errno, strerror(errno));
