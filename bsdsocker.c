@@ -18,36 +18,44 @@
 int main(int argc, char **argv) {
     int i, bpf, buffer_int;
     char buffer_char[11] = { 0 };
+    const char* interface = "en0";
     struct ifreq bound_if;
 
     // Attempt to open the next available Berkley Packet Filter device (BPF)
     for (i = 0; i < MAX_BPF_DEVICES; i++) {
         // Generate the path to the next possible BPF
-        sprintf(buffer_char, "/dev/bpf%i", i);
+        sprintf(buffer_char, "/dev/bpf%u", i);
 
         // Attempt to open the next possible BPF; If we don't fail, we have
         //  succeeded in finding an available one
-        bpf = open(buffer_char, O_RDWR);
-        if (bpf != -1)
+        bpf = open(buffer_char, O_RDWR | O_NONBLOCK);
+        
+        if (bpf != -1) {
             break;
+        } else if (errno == EACCES) {
+            trace("The system is denying permission to its BPF devices. Make "
+                    "sure propper permissions are being used (e.g. root).\n");
+            exit(1);
+        }
     }
 
-    if (i == 100 && bpf == -1) {
-        trace("Failed to open a BPF device after 100 tries.\n");
+    if (bpf == -1) {
+        trace("Failed to open a BPF device after %d tries.\n", MAX_BPF_DEVICES);
+        trace("The error on the final attempt was \"%s\".\n", strerror(errno));
         exit(1);
     }
     else {
-        trace("Successfully opened the BPF device at %s.\n", buffer_char);
+        trace("Successfully opened the BPF device at %s (file descriptor = %d).\n", buffer_char, bpf);
     }
 
     // Associate with a particular network interface
-    strcpy(bound_if.ifr_name, "en1");
+    strcpy(bound_if.ifr_name, interface);
     if(ioctl(bpf, BIOCSETIF, &bound_if) == -1) {
-        trace("Failed to associate the BPF device with the network interface \"%s\". (%i: %s)\n", "en1", errno, strerror(errno));
+        trace("Failed to associate the BPF device with the network interface \"%s\". (%i: %s)\n", interface, errno, strerror(errno));
         exit(1);
     }
     else {
-        trace("Successfully associated the BPF device with the network interface \"%s\".\n", "en1");
+        trace("Successfully associated the BPF device with the network interface \"%s\".\n", interface);
     }
 
     // Turn on "immediate" mode

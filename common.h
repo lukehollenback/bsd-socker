@@ -7,7 +7,7 @@
 
 #define APP_NAME "bsdsocker"
 
-#define MAX_BPF_DEVICES 50
+#define MAX_BPF_DEVICES 99
 
 /**
  * MACROS
