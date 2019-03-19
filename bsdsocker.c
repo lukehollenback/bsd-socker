@@ -13,6 +13,7 @@
 #include <net/bpf.h>
 #include "common.h"
 #include "ethernet_frame.h"
+#include "logger.h"
 #include "limits.h"
 
 int main(int argc, char **argv) {
@@ -20,6 +21,10 @@ int main(int argc, char **argv) {
     char buffer_char[11] = { 0 };
     const char* interface = "en0";
     struct ifreq bound_if;
+
+    // Set up the logger
+    setLoggerOptions(LL_TRACE, LO_NOLABEL);
+    setLoggerOptions(LL_INFO, LO_NOLABEL);
 
     // Attempt to open the next available Berkley Packet Filter device (BPF)
     for (i = 0; i < MAX_BPF_DEVICES; i++) {
@@ -33,29 +38,27 @@ int main(int argc, char **argv) {
         if (bpf != -1) {
             break;
         } else if (errno == EACCES) {
-            trace("The system is denying permission to its BPF devices. Make "
-                    "sure propper permissions are being used (e.g. root).\n");
-            exit(1);
+            fatal("The system is denying permission to its BPF devices. Make sure propper permissions are being used "
+                    "(e.g. root).");
         }
     }
 
     if (bpf == -1) {
-        trace("Failed to open a BPF device after %d tries.\n", MAX_BPF_DEVICES);
-        trace("The error on the final attempt was \"%s\".\n", strerror(errno));
-        exit(1);
+        fatal("Failed to open a BPF device after %d tries. The error on the final attempt was \"%s\".", MAX_BPF_DEVICES,
+                strerror(errno));
     }
     else {
-        trace("Successfully opened the BPF device at %s (file descriptor = %d).\n", buffer_char, bpf);
+        info("Successfully opened the BPF device at %s (file descriptor = %d).", buffer_char, bpf);
     }
 
     // Associate with a particular network interface
     strcpy(bound_if.ifr_name, interface);
     if(ioctl(bpf, BIOCSETIF, &bound_if) == -1) {
-        trace("Failed to associate the BPF device with the network interface \"%s\". (%i: %s)\n", interface, errno, strerror(errno));
-        exit(1);
+        fatal("Failed to associate the BPF device with the network interface \"%s\". (%i: %s)", interface, errno,
+                strerror(errno));
     }
     else {
-        trace("Successfully associated the BPF device with the network interface \"%s\".\n", interface);
+        info("Successfully associated the BPF device with the network interface \"%s\".", interface);
     }
 
     // Turn on "immediate" mode
@@ -64,21 +67,19 @@ int main(int argc, char **argv) {
     //  occurs.
     buffer_int = 1;
     if (ioctl(bpf, BIOCIMMEDIATE, &buffer_int) == -1) {
-        trace("Failed to turn on the BPF device's \"immediate\" mode. (%i: %s)\n", errno, strerror(errno));
-        exit(1);
+        fatal("Failed to turn on the BPF device's \"immediate\" mode. (%i: %s)", errno, strerror(errno));
     }
     else {
-        trace("Successfully turned on the BPF device's \"immediate\" mode.\n");
+        info("Successfully turned on the BPF device's \"immediate\" mode.");
     }
 
     // Get the buffer length (so that we can traverse multiple entries when
     //  reading from the BPF)
     if (ioctl(bpf, BIOCGBLEN, &buffer_int) == -1) {
-        trace("Failed to retrieve the BPF device's buffer length. (%i: %s)\n", errno, strerror(errno));
-        exit(1);
+        fatal("Failed to retrieve the BPF device's buffer length. (%i: %s)", errno, strerror(errno));
     }
     else {
-        trace("Successfully retrieved the BPF device's buffer length (%i bytes).\n", buffer_int);
+        info("Successfully retrieved the BPF device's buffer length (%i bytes).", buffer_int);
     }
 
     // Clean up after ourselves

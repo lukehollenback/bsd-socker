@@ -18,7 +18,4 @@
 #define TRUE 1
 #define FALSE 0
 
-// Function Macros
-#define trace printf(APP_NAME ": "); printf
-
 #endif
