@@ -2,6 +2,7 @@
 #define _ETHERNET_FRAME_H_
 
 #include "common.h"
+#include <stdbool.h>
 
 /**
  * Represents the basic header of an ethernet frame (not an ethernet packet,
@@ -25,7 +26,7 @@ typedef enum {
     ET_VLANTAGGED   = 0x8100
 } EthernetType;
 
-BOOL EthernetFrame_isVLANTagged(EthernetFrame *o);
+bool EthernetFrame_isVLANTagged(EthernetFrame *o);
 EthernetType EthernetFrame_getEthernetType(EthernetFrame *o);
 unsigned char * EthernetFrame_getPayloadPointer(EthernetFrame *o);
 

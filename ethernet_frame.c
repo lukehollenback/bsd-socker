@@ -1,12 +1,13 @@
 #include "ethernet_frame.h"
 #include "common.h"
 #include <stdio.h>
+#include <stdbool.h>
 
 /**
  * Determines whether or not the provided EthernetFrame has been VLAN-tagged
  * according to IEEE 802.1Q standards.
  */
-BOOL EthernetFrame_isVLANTagged(EthernetFrame *o) {
+bool EthernetFrame_isVLANTagged(EthernetFrame *o) {
     unsigned int ethernet_type = 0x0000;
 
     // Retrieve the "EtherType" field of the EthernetFrame
@@ -15,9 +16,9 @@ BOOL EthernetFrame_isVLANTagged(EthernetFrame *o) {
     // Check to see if the field is equal to the magic number that indicates
     //  that the frame has a VLAN-tag
     if (ethernet_type == ET_VLANTAGGED)
-        return TRUE;
+        return true;
 
-    return FALSE;
+    return false;
 }
 
 /**
