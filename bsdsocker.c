@@ -21,10 +21,37 @@ int main(int argc, char **argv) {
     char buffer_char[11] = { 0 };
     const char* interface = "en0";
     struct ifreq bound_if;
+    Options options = {
+        .output_file = { 0 },
+        .interface_name = "en0"
+    };
 
-    // Set up the logger
+    // Set up the logger with some default settings
     setLoggerOptions(LL_TRACE, LO_NOLABEL);
     setLoggerOptions(LL_INFO, LO_NOLABEL);
+
+    // Parse arguments into the options struct
+    while ((i = getopt(argc, argv, "ho:i:")) != -1) {
+        switch (i) {
+            case 'h':
+                output(NULL, "USAGE:\tsocker [-h][-o output_file][-i interface_name]\n");
+                exit(0);
+
+            case 'o':
+                strncpy(options.output_file, optarg, MAX_PATH_LENGTH);
+                break;
+            
+            case 'i':
+                strncpy(options.interface_name, optarg, MAX_PATH_LENGTH);
+                break;
+            
+            default:
+                fatal("Invalid option specified (-%c).", optopt);
+        }
+    }
+
+    info("Output file set to %s.", options.output_file);
+    info("Interface set to %s.", options.interface_name);
 
     // Attempt to open the next available Berkley Packet Filter device (BPF)
     for (i = 0; i < MAX_BPF_DEVICES; i++) {
