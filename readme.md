@@ -1,5 +1,6 @@
 # BSDSocker
-![](https://img.shields.io/badge/project%20status-on%20hold-orange.svg)
+
+![Status: In Development](https://img.shields.io/badge/Status-In%20Development-blue.svg)
 
 A basic command-line packet sniffer and injector for BSD-based systems (e.g.
 macOS). The goal of this project is that it:
