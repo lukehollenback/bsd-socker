@@ -12,6 +12,7 @@
 #include <net/if.h>
 #include <net/bpf.h>
 #include "common.h"
+#include "options.h"
 #include "ethernet_frame.h"
 #include "logger.h"
 #include "limits.h"
@@ -21,10 +22,6 @@ int main(int argc, char **argv) {
     char buffer_char[11] = { 0 };
     const char* interface = "en0";
     struct ifreq bound_if;
-    Options options = {
-        .output_file = { 0 },
-        .interface_name = "en0"
-    };
 
     // Set up the logger with some default settings
     setLoggerOptions(LL_TRACE, LO_NOLABEL);
@@ -38,11 +35,11 @@ int main(int argc, char **argv) {
                 exit(0);
 
             case 'o':
-                strncpy(options.output_file, optarg, MAX_PATH_LENGTH);
+                Options_setOutputFile(optarg);
                 break;
             
             case 'i':
-                strncpy(options.interface_name, optarg, MAX_PATH_LENGTH);
+                Options_setInterfaceName(optarg);
                 break;
             
             default:
@@ -50,8 +47,8 @@ int main(int argc, char **argv) {
         }
     }
 
-    info("Output file set to %s.", options.output_file);
-    info("Interface set to %s.", options.interface_name);
+    info("Output file set to %s.", Options_getOutputFile());
+    info("Interface set to %s.", Options_getInterfaceName());
 
     // Attempt to open the next available Berkley Packet Filter device (BPF)
     for (i = 0; i < MAX_BPF_DEVICES; i++) {
@@ -79,17 +76,17 @@ int main(int argc, char **argv) {
     }
 
     // Associate with a particular network interface
-    strcpy(bound_if.ifr_name, interface);
+    strcpy(bound_if.ifr_name, Options_getInterfaceName());
     if(ioctl(bpf, BIOCSETIF, &bound_if) == -1) {
-        fatal("Failed to associate the BPF device with the network interface \"%s\". (%i: %s)", interface, errno,
-                strerror(errno));
+        fatal("Failed to associate the BPF device with the network interface \"%s\". (%i: %s)",
+                Options_getInterfaceName(), errno, strerror(errno));
     }
     else {
-        info("Successfully associated the BPF device with the network interface \"%s\".", interface);
+        info("Successfully associated the BPF device with the network interface \"%s\".", Options_getInterfaceName());
     }
 
     // Turn on "immediate" mode
-    // NOTE: This means that blocking reads will return as soon as new socket
+    // NOTE ~> This means that blocking reads will return as soon as new socket
     //  data is available rather than when the read buffer is full or a timeout
     //  occurs.
     buffer_int = 1;

@@ -1,6 +1,10 @@
 #ifndef _LOGGER_H_
 #define _LOGGER_H_
 
+// NOTE ~> We aren't building out an "object" for the Logger because it is
+//  effectively a singleton. Right now, there just is no point in
+//  over-engineering it.
+
 /**
  * Various logger levels.
  */
