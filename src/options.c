@@ -42,7 +42,7 @@ void Options_checkForRequiredOptions() {
  */
 void Options_logOptions() {
     info("Interface set to %s.", Options_getInterfaceName());
-    if (!*o.output_file) {
+    if (*o.output_file) {
         info("Output file set to %s.", Options_getOutputFile());
     }
 }
