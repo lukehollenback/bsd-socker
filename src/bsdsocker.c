@@ -28,7 +28,8 @@ int main(int argc, char** argv) {
     setLoggerOptions(LL_TRACE, LO_NOLABEL);
     setLoggerOptions(LL_INFO, LO_NOLABEL);
 
-    // Parse the program arguments
+    // Parse the program arguments and use them to configure any appropriate
+    // options
     parseArguments(argc, argv);
 
     // Initialize a BPF device for the specified interface and run the main
