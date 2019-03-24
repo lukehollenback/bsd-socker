@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -18,11 +19,19 @@
 #include "limits.h"
 
 static void parseArguments(int argc, char** argv);
-static int initializeDevice();
+static void initializeDevice(int* descriptor, int* buffer_length);
+static void sniff(int bpf, int buffer_length);
 static void deinitializeDevice(int bpf);
+static void signalHandler(int sig_num);
+
+static bool running = true;
 
 int main(int argc, char** argv) {
-    int bpf = -1;
+    int bpf, buffer_length;
+
+    // Specify a signal handler to catch various signals (like those sent when
+    // Ctrl+C is pressed)
+    signal(SIGINT, signalHandler); 
 
     // Set up the logger with some default settings
     setLoggerOptions(LL_TRACE, LO_NOLABEL);
@@ -34,7 +43,8 @@ int main(int argc, char** argv) {
 
     // Initialize a BPF device for the specified interface and run the main
     // program
-    bpf = initializeDevice();
+    initializeDevice(&bpf, &buffer_length);
+    sniff(bpf, buffer_length);
     deinitializeDevice(bpf);
 
     return 0;
@@ -69,9 +79,9 @@ static void parseArguments(int argc, char** argv) {
 
 /**
  * Attempts to grab a descriptor to a valid BPF device from the system and
- * initialize it. Returns the descriptor or fatals trying.
+ * initialize it.
  */
-static int initializeDevice() {
+static void initializeDevice(int* descriptor, int* buffer_length) {
     int i, buffer_int, bpf;
     char buffer_char[11] = { 0 };
     struct ifreq bound_if;
@@ -125,14 +135,57 @@ static int initializeDevice() {
 
     // Get the buffer length (so that we can traverse multiple entries when
     //  reading from the BPF)
-    if (ioctl(bpf, BIOCGBLEN, &buffer_int) == -1) {
+    if (ioctl(bpf, BIOCGBLEN, buffer_length) == -1) {
         fatal("Failed to retrieve the BPF device's buffer length. (%i: %s)", errno, strerror(errno));
     }
     else {
-        info("Retrieved the BPF device's buffer length (%i bytes).", buffer_int);
+        info("Retrieved the BPF device's buffer length (%i bytes).", *buffer_length);
     }
 
-    return bpf;
+    // Place the BPF's descriptor into the provided variable reference
+    *descriptor = bpf;
+}
+
+/**
+ * Actually sniffs and logs packets.
+ */
+static void sniff(int bpf, int buffer_length) {
+    EthernetFrame* frame;
+    struct bpf_hdr* bpf_buffer = malloc(buffer_length * sizeof(struct bpf_hdr));
+    struct bpf_hdr* bpf_packet;
+    int read_bytes = 0;
+
+    while (running) {
+        memset(bpf_buffer, 0, buffer_length);
+
+        if((read_bytes = read(bpf, bpf_buffer, buffer_length)) > 0) {
+            int i = 0;
+            char* ptr = (char*) bpf_buffer;
+
+            while (ptr < (((char*) bpf_buffer) + read_bytes)) {
+                bpf_packet = (struct bpf_hdr*) ptr;
+                frame = (EthernetFrame*)((char*) bpf_packet + bpf_packet->bh_hdrlen);
+
+                // Figure out and log the type of the frame
+                switch (EthernetFrame_getEthernetType(frame)) {
+                    case ET_IPV4:
+                        output(NULL, "IPv4\n");
+                        break;
+                    case ET_IPV6:
+                        output(NULL, "IPv6\n");
+                        break;
+                    case ET_VLANTAGGED:
+                        output(NULL, "VLAN Tagged\n");
+                        break;
+                    default:
+                        output(NULL, "Unknown (%04x)\n", EthernetFrame_getEthernetType(frame));
+                        break;
+                }
+
+                ptr += BPF_WORDALIGN(bpf_packet->bh_hdrlen + bpf_packet->bh_caplen);
+            }
+        }
+    }
 }
 
 /**
@@ -141,4 +194,25 @@ static int initializeDevice() {
 static void deinitializeDevice(int bpf) {
     close(bpf);
     info("Closed BPF device with file descriptor %d", bpf);
+}
+
+/**
+ * Provides overriden signal handling specific to this program's use cases for
+ * registered signals.
+ */
+static void signalHandler(int sig_num) {
+    // Reset the signal handler
+    // NOTE ~> This is mainly for cases where we might not actually end the
+    //  program here so that we are able to catch it next time.
+    signal(SIGINT, signalHandler); 
+
+    // Handle possible signals
+    switch (sig_num) {
+        case SIGINT:
+            running = false;
+            break;
+
+        default:
+            break;
+    }
 }
