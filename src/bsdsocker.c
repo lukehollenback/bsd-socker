@@ -26,6 +26,8 @@ int main(int argc, char **argv) {
     setLoggerOptions(LL_TRACE, LO_NOLABEL);
     setLoggerOptions(LL_INFO, LO_NOLABEL);
 
+    output(NULL, APP_NAME);
+
     // Parse arguments into the options struct
     while ((i = getopt(argc, argv, "ho:i:")) != -1) {
         switch (i) {

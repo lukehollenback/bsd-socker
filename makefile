@@ -1,14 +1,16 @@
-project = socker
-srcdir = src
-builddir = build
-src = $(wildcard $(srcdir)/*.c)
-obj = $(src:.c=.o)
+PROJECT = socker
+SRC_DIR = src
+BLD_DIR = build
+SRCS := $(wildcard $(SRC_DIR)/*.c)
+OBJS := $(SRCS:.c=.o)
 
-$(builddir)/$(project): $(obj)
+CFLAGS := -DAPP_NAME=\"$(PROJECT)\"
+
+$(BLD_DIR)/$(PROJECT): $(OBJS)
 	mkdir -p $(@D)
-	$(CC) -o $@ -DAPP_NAME=$(project) $^
-	rm $(srcdir)/*.o
+	$(CC) -o $@ $(CFLAGS) $^
+	rm $(SRC_DIR)/*.o
 
 .PHONY: clean
 clean:
-	rm -rf $(builddir)
+	rm -rf $(BLD_DIR)
