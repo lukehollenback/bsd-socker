@@ -9,5 +9,7 @@ void Options_setOutputFile(char* file);
 char* Options_getOutputFile();
 void Options_setInterfaceName(char* name);
 char* Options_getInterfaceName();
+void Options_checkForRequiredOptions();
+void Options_logOptions();
 
 #endif

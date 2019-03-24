@@ -20,7 +20,6 @@
 int main(int argc, char **argv) {
     int i, bpf, buffer_int;
     char buffer_char[11] = { 0 };
-    const char* interface = "en0";
     struct ifreq bound_if;
 
     // Set up the logger with some default settings
@@ -47,8 +46,8 @@ int main(int argc, char **argv) {
         }
     }
 
-    info("Output file set to %s.", Options_getOutputFile());
-    info("Interface set to %s.", Options_getInterfaceName());
+    Options_checkForRequiredOptions();
+    Options_logOptions();
 
     // Attempt to open the next available Berkley Packet Filter device (BPF)
     for (i = 0; i < MAX_BPF_DEVICES; i++) {

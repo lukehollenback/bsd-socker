@@ -1,5 +1,6 @@
 #include "common.h"
 #include <string.h>
+#include "logger.h"
 
 typedef struct {
     char output_file[MAX_PATH_LENGTH];
@@ -25,4 +26,23 @@ void Options_setInterfaceName(char* name) {
 
 char* Options_getInterfaceName() {
     return o.interface_name;
+}
+
+/**
+ * Verifies that required options are specified, otherwise fatals the program.
+ */
+void Options_checkForRequiredOptions() {
+    if (!*o.interface_name) {
+        fatal("A network interface name must be specified.");
+    }
+}
+
+/**
+ * Outputs options (only required & specified) to the log.
+ */
+void Options_logOptions() {
+    info("Interface set to %s.", Options_getInterfaceName());
+    if (!*o.output_file) {
+        info("Output file set to %s.", Options_getOutputFile());
+    }
 }
