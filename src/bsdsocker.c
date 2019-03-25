@@ -166,26 +166,16 @@ static void sniff(int bpf, int buffer_length) {
                 bpf_packet = (struct bpf_hdr*) ptr;
                 frame = (EthernetFrame*)((char*) bpf_packet + bpf_packet->bh_hdrlen);
 
-                // Figure out and log the type of the frame
-                switch (EthernetFrame_getEthernetType(frame)) {
-                    case ET_IPV4:
-                        output(NULL, "IPv4\n");
-                        break;
-                    case ET_IPV6:
-                        output(NULL, "IPv6\n");
-                        break;
-                    case ET_VLANTAGGED:
-                        output(NULL, "VLAN Tagged\n");
-                        break;
-                    default:
-                        output(NULL, "Unknown (%04x)\n", EthernetFrame_getEthernetType(frame));
-                        break;
-                }
+                EthernetFrame_output(frame);
 
                 ptr += BPF_WORDALIGN(bpf_packet->bh_hdrlen + bpf_packet->bh_caplen);
             }
         }
     }
+
+    // Clean up after ourselves
+    // NOTE ~> This should happen automatically, but better be safe than sorry.
+    free(bpf_buffer);
 }
 
 /**

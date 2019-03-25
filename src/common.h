@@ -10,4 +10,6 @@
 #define MAX_BPF_DEVICES 99
 #define MAX_PATH_LENGTH 256
 
+#define OCTET 8
+
 #endif
