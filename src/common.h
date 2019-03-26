@@ -12,4 +12,6 @@
 
 #define OCTET 8
 
+typedef unsigned char octet;
+
 #endif

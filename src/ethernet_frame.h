@@ -24,7 +24,7 @@ void EthernetType_toString(EthernetType et, char* buff, int buff_size);
 EthernetFrame* EthernetFrame_new();
 unsigned int EthernetFrame_getVLANTag(EthernetFrame* o);
 EthernetType EthernetFrame_getEthernetType(EthernetFrame* o);
-unsigned char* EthernetFrame_getPayloadPointer(EthernetFrame* o);
+octet* EthernetFrame_getPayloadPointer(EthernetFrame* o);
 void EthernetFrame_output(EthernetFrame* o);
 
 #endif

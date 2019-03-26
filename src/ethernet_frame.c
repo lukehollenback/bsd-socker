@@ -25,12 +25,12 @@ struct EthernetFrame {
     /**
      * The MAC address of the NIC that the frame is destined for.
      */
-    unsigned char destination_mac_address[DEST_MAC_SIZE];
+    octet destination_mac_address[DEST_MAC_SIZE];
 
     /**
      * The MAC address of the NIC that the frame (supposedly) originated from.
      */
-    unsigned char source_mac_address[SRC_MAC_SIZE];
+    octet source_mac_address[SRC_MAC_SIZE];
 
     /**
      * The "EtherType" field of the frame.
@@ -38,7 +38,7 @@ struct EthernetFrame {
      * If the frame is VLAN tagged, this actually represents the TPID indicating
      * so, and the "EtherType" exists in the payload.
      */
-    unsigned char ethernet_type[ETHER_TYPE_SIZE];
+    octet ethernet_type[ETHER_TYPE_SIZE];
 
     /**
      * The payload of the frame.
@@ -47,7 +47,7 @@ struct EthernetFrame {
      * payload[0] and payload [1] represent the "TCI", payload[2] and payload[3]
      * represent the "EtherType", and the actual payload begins at payload[4].
      */
-    unsigned char payload[PAYLD_SIZE];
+    octet payload[PAYLD_SIZE];
 };
 
 /**
@@ -77,11 +77,8 @@ unsigned int EthernetFrame_getVLANTag(EthernetFrame* o) {
 
     // If the TPID is specified where the "EtherType" field usually exists,
     // return the two octect "TCI" field that follows
-    // NOTE ~> The easiest way to get the address of the "TCI" field is to use
-    //  the knon address of what would be the first octed of the frame's actual
-    //  payload if it was NOT VLAN tagged.
     if (ethernet_type == ET_VLANTAGGED) {
-        unsigned char* tci_pointer = &o->payload[0];
+        octet* tci_pointer = &o->payload[0];
 
         return ((tci_pointer[0] << OCTET) | tci_pointer[1]);
     }
@@ -94,15 +91,16 @@ unsigned int EthernetFrame_getVLANTag(EthernetFrame* o) {
  * returns it.
  */
 EthernetType EthernetFrame_getEthernetType(EthernetFrame* o) {
-    int offset = 12; // NOTE ~> 12 is the default offset of the "EtherType" field of an EthernetFrame, but only when it isn't VLAN-tagged.
-    unsigned char* ethernet_type_pointer;
+    octet* ethernet_type_pointer;
 
-    // Figure out where our starting position is
-    if (EthernetFrame_getVLANTag(o) != -1)
-        offset = 16; // NOTE ~> The VLAN-tag is 4 bytes long.
+    // Find our "EtherType" field and get a pointer to it
+    if (EthernetFrame_getVLANTag(o) != -1) {
+        ethernet_type_pointer = (octet*) (o->payload + PAYLD_VLAN_ETHER_TYPE_OFFSET);
+    } else {
+        ethernet_type_pointer = o->ethernet_type;
+    }
     
     // Retrieve the value of the "EtherType" field and return it
-    ethernet_type_pointer = (unsigned char *)((unsigned char *)o + offset);
     return ((ethernet_type_pointer[0] << OCTET) | ethernet_type_pointer[1]);
 }
 
@@ -110,15 +108,13 @@ EthernetType EthernetFrame_getEthernetType(EthernetFrame* o) {
  * Figures out where the "Payload" field of the provided "EthernetFrame" is and
  * returns a pointer to it
  */
-unsigned char* EthernetFrame_getPayloadPointer(EthernetFrame* o) {
-    int offset = 14; // NOTE ~> 14 is the default offset of the "Payload" field of an Ethernet Frame, but only when it isn't VLAN tagged.
-
-    // Figure out where our starting position is
-    if (EthernetFrame_getVLANTag(o) != -1)
-        offset = 18; // NOTE ~> The VLAN-tag is 4 bytes long.
-    
-    // Retrieve a pointer to the "Payload" field and return it
-    return (unsigned char *)((unsigned char *)o + offset);
+octet* EthernetFrame_getPayloadPointer(EthernetFrame* o) {
+    // Find our payload and get a pointer to it
+    if (EthernetFrame_getVLANTag(o) != -1) {
+        return (octet*) (o->payload + PAYLD_VLAN_PAYLD_OFFSET);
+    } else {
+        return o->payload;
+    }
 }
 
 /**
