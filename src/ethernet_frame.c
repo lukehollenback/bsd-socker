@@ -8,10 +8,9 @@
 
 #define DEST_MAC_SIZE                   6
 #define SRC_MAC_SIZE                    6
+#define VLAN_TAG_SIZE                   4
 #define ETHER_TYPE_SIZE                 2
-#define PAYLD_SIZE                      1508
-#define PAYLD_CRC_OFFSET                1500
-#define PAYLD_VLAN_CRC_OFFSET           1504
+#define PAYLD_MAX_SIZE                  1508
 #define PAYLD_VLAN_ETHER_TYPE_OFFSET    2
 #define PAYLD_VLAN_PAYLD_OFFSET         4
 
@@ -47,7 +46,7 @@ struct EthernetFrame {
      * payload[0] and payload [1] represent the "TCI", payload[2] and payload[3]
      * represent the "EtherType", and the actual payload begins at payload[4].
      */
-    OCTET payload[PAYLD_SIZE];
+    OCTET payload[PAYLD_MAX_SIZE];
 };
 
 /**
@@ -112,6 +111,19 @@ EthernetType EthernetFrame_getEthernetType(EthernetFrame* o) {
 }
 
 /**
+ * Calculates and returns the size of the header (a.k.a. the number of bytes
+ * before the payload) of the provided Ethernet Frame.
+ */
+size_t EthernetFrame_getHeaderSize(EthernetFrame* o) {
+    size_t size = (DEST_MAC_SIZE + SRC_MAC_SIZE + ETHER_TYPE_SIZE);
+
+    if (EthernetFrame_getVLANTag(o) != -1)
+        size += VLAN_TAG_SIZE;
+    
+    return size;
+}
+
+/**
  * Figures out where the "Payload" field of the provided "EthernetFrame" is and
  * returns a pointer to it
  */
@@ -128,8 +140,9 @@ OCTET* EthernetFrame_getPayloadPointer(EthernetFrame* o) {
  * Generates a printable string representation of the provided EthernetFrame
  * according to the program's options.
  */
-void EthernetFrame_output(EthernetFrame* o) {
+void EthernetFrame_output(EthernetFrame* o, size_t size) {
     UINT tci;
+    char buff[18] = { 0 };
 
     // Grab the necessary peices
     char et[12] = { 0 };
@@ -138,17 +151,24 @@ void EthernetFrame_output(EthernetFrame* o) {
     // Output a readable version of the EthernetFrame
     output(NULL, "[    ]\t");
     output(LC_BLUE, et);
+
     output(NULL, "\t");
     if ((tci = EthernetFrame_getVLANTag(o)) != -1)
-        output(LC_YELLOW, "0x%04x", tci);
+        output(LC_BLUE, "0x%04x", tci);
+
+    octetsToHexString(o->destination_mac_address, 6, buff, '-', 2);
+    output(LC_BLUE, "\tDest MAC: %s", buff);
+
+    octetsToHexString(o->source_mac_address, 6, buff, '-', 2);
+    output(LC_BLUE, "\tSource MAC: %s", buff);
+
     output(NULL, "\t");
     
     OCTET* data_ptr = EthernetFrame_getPayloadPointer(o);
-    int data_read = 0;
-    while (true) {
-        if (data_read >= 1500)
-            break;
+    size_t pyld_size = (size - EthernetFrame_getHeaderSize(o));
+    size_t data_read = 0;
 
+    while (data_read < pyld_size) {
         if ((data_read % 48) == 0)
             output(NULL, "\n\t");
         

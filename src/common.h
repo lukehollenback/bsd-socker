@@ -14,9 +14,11 @@
 
 typedef unsigned char OCTET;
 typedef unsigned int UINT;
+typedef unsigned long ULONG;
 
 void verifyConfiguration();
 void octetsToInt(OCTET* octets, size_t num_octets, UINT* buff);
-void octetsToString(OCTET* octets, size_t num_octets, char* buff);
+void octetsToCharString(OCTET* octets, size_t num_octets, char* buff);
+void octetsToHexString(OCTET* octets, size_t num_octets, char* buff, char sep, size_t sep_interval);
 
 #endif

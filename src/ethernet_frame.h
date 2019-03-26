@@ -25,6 +25,6 @@ EthernetFrame* EthernetFrame_new();
 UINT EthernetFrame_getVLANTag(EthernetFrame* o);
 EthernetType EthernetFrame_getEthernetType(EthernetFrame* o);
 OCTET* EthernetFrame_getPayloadPointer(EthernetFrame* o);
-void EthernetFrame_output(EthernetFrame* o);
+void EthernetFrame_output(EthernetFrame* o, size_t size);
 
 #endif

@@ -19,15 +19,15 @@
 #include "limits.h"
 
 static void parseArguments(int argc, char** argv);
-static void initializeDevice(int* descriptor, int* buffer_length);
-static void sniff(int bpf, int buffer_length);
+static void initializeDevice(int* descriptor, int* bpf_buff_size);
+static void sniff(int bpf, int bpf_buff_size);
 static void deinitializeDevice(int bpf);
 static void signalHandler(int sig_num);
 
 static bool running = true;
 
 int main(int argc, char** argv) {
-    int bpf, buffer_length;
+    int bpf, bpf_buff_size;
 
     // Make sure that our assumptions about the configuration this program has
     // been compiled and run against ar correct and fatal if not
@@ -47,8 +47,8 @@ int main(int argc, char** argv) {
 
     // Initialize a BPF device for the specified interface and run the main
     // program
-    initializeDevice(&bpf, &buffer_length);
-    sniff(bpf, buffer_length);
+    initializeDevice(&bpf, &bpf_buff_size);
+    sniff(bpf, bpf_buff_size);
     deinitializeDevice(bpf);
 
     return 0;
@@ -85,7 +85,7 @@ static void parseArguments(int argc, char** argv) {
  * Attempts to grab a descriptor to a valid BPF device from the system and
  * initialize it.
  */
-static void initializeDevice(int* descriptor, int* buffer_length) {
+static void initializeDevice(int* descriptor, int* bpf_buff_size) {
     int i, buffer_int, bpf;
     char buffer_char[11] = { 0 };
     struct ifreq bound_if;
@@ -139,11 +139,11 @@ static void initializeDevice(int* descriptor, int* buffer_length) {
 
     // Get the buffer length (so that we can traverse multiple entries when
     //  reading from the BPF)
-    if (ioctl(bpf, BIOCGBLEN, buffer_length) == -1) {
+    if (ioctl(bpf, BIOCGBLEN, bpf_buff_size) == -1) {
         fatal("Failed to retrieve the BPF device's buffer length. (%i: %s)", errno, strerror(errno));
     }
     else {
-        info("Retrieved the BPF device's buffer length (%i bytes).", *buffer_length);
+        info("Retrieved the BPF device's buffer length (%i bytes).", *bpf_buff_size);
     }
 
     // Place the BPF's descriptor into the provided variable reference
@@ -153,25 +153,36 @@ static void initializeDevice(int* descriptor, int* buffer_length) {
 /**
  * Actually sniffs and logs packets.
  */
-static void sniff(int bpf, int buffer_length) {
-    EthernetFrame* frame;
-    struct bpf_hdr* bpf_buffer = malloc(buffer_length * sizeof(struct bpf_hdr));
+static void sniff(int bpf, int bpf_buff_size) {
+    EthernetFrame* ethernet_frame;
+    struct bpf_hdr* bpf_buffer = malloc(bpf_buff_size * sizeof(OCTET));
     struct bpf_hdr* bpf_packet;
     int read_bytes = 0;
 
     while (running) {
-        memset(bpf_buffer, 0, buffer_length);
+        // Clean the buffer
+        memset(bpf_buffer, 0x00, bpf_buff_size);
 
-        if((read_bytes = read(bpf, bpf_buffer, buffer_length)) > 0) {
-            int i = 0;
-            char* ptr = (char*) bpf_buffer;
+        // Read the buffer
+        if((read_bytes = read(bpf, bpf_buffer, bpf_buff_size)) > 0) {
+            // Get a generic octet pointer to the buffer
+            OCTET* ptr = (OCTET*) bpf_buffer;
 
-            while (ptr < (((char*) bpf_buffer) + read_bytes)) {
+            // While there are still unproccessed Ethernet Frames in the
+            // buffer...
+            while (ptr < (((OCTET*) bpf_buffer) + read_bytes)) {
+                // Grab pointers to both the BPF header for the Ethernet Frame
+                // and the Ethernet Frame itself
                 bpf_packet = (struct bpf_hdr*) ptr;
-                frame = (EthernetFrame*)((char*) bpf_packet + bpf_packet->bh_hdrlen);
+                ethernet_frame = (EthernetFrame*)((OCTET*) bpf_packet + bpf_packet->bh_hdrlen);
 
-                EthernetFrame_output(frame);
+                // Process and output the Ethernet Frame
+                EthernetFrame_output(ethernet_frame, bpf_packet->bh_caplen);
 
+                // Jump ahead to the next Ethernet Frame that is in the buffer
+                // NOTE ~> This algorithm does not currently support Ethernet
+                //  Frames that might only be partially in the buffer (due to
+                //  trunctaion by the BPF).
                 ptr += BPF_WORDALIGN(bpf_packet->bh_hdrlen + bpf_packet->bh_caplen);
             }
         }
