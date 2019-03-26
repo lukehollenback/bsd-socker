@@ -25,12 +25,12 @@ struct EthernetFrame {
     /**
      * The MAC address of the NIC that the frame is destined for.
      */
-    octet destination_mac_address[DEST_MAC_SIZE];
+    OCTET destination_mac_address[DEST_MAC_SIZE];
 
     /**
      * The MAC address of the NIC that the frame (supposedly) originated from.
      */
-    octet source_mac_address[SRC_MAC_SIZE];
+    OCTET source_mac_address[SRC_MAC_SIZE];
 
     /**
      * The "EtherType" field of the frame.
@@ -38,7 +38,7 @@ struct EthernetFrame {
      * If the frame is VLAN tagged, this actually represents the TPID indicating
      * so, and the "EtherType" exists in the payload.
      */
-    octet ethernet_type[ETHER_TYPE_SIZE];
+    OCTET ethernet_type[ETHER_TYPE_SIZE];
 
     /**
      * The payload of the frame.
@@ -47,7 +47,7 @@ struct EthernetFrame {
      * payload[0] and payload [1] represent the "TCI", payload[2] and payload[3]
      * represent the "EtherType", and the actual payload begins at payload[4].
      */
-    octet payload[PAYLD_SIZE];
+    OCTET payload[PAYLD_SIZE];
 };
 
 /**
@@ -69,8 +69,8 @@ EthernetFrame* EthernetFrame_new() {
  * NOTE ~> We do not currently support 801.2ad standard extensions to this
  *  section of the frame.
  */
-unsigned int EthernetFrame_getVLANTag(EthernetFrame* o) {
-    unsigned int ethernet_type = 0x0000;
+UINT EthernetFrame_getVLANTag(EthernetFrame* o) {
+    UINT ethernet_type = 0x0000;
 
     // Retrieve the 2 octet "EtherType" field of the EthernetFrame
     ethernet_type = ((o->ethernet_type[0] << 8) | o->ethernet_type[1]);
@@ -78,9 +78,12 @@ unsigned int EthernetFrame_getVLANTag(EthernetFrame* o) {
     // If the TPID is specified where the "EtherType" field usually exists,
     // return the two octect "TCI" field that follows
     if (ethernet_type == ET_VLANTAGGED) {
-        octet* tci_pointer = &o->payload[0];
+        OCTET* tci_pointer = o->payload;
+        UINT buff[1] = { 0x0000 };
 
-        return ((tci_pointer[0] << OCTET) | tci_pointer[1]);
+        octetsToInt(tci_pointer, 2, buff);
+    
+        return (*buff);
     }
 
     return -1;
@@ -91,27 +94,31 @@ unsigned int EthernetFrame_getVLANTag(EthernetFrame* o) {
  * returns it.
  */
 EthernetType EthernetFrame_getEthernetType(EthernetFrame* o) {
-    octet* ethernet_type_pointer;
+    OCTET* ethernet_type_pointer;
 
     // Find our "EtherType" field and get a pointer to it
     if (EthernetFrame_getVLANTag(o) != -1) {
-        ethernet_type_pointer = (octet*) (o->payload + PAYLD_VLAN_ETHER_TYPE_OFFSET);
+        ethernet_type_pointer = (OCTET*) (o->payload + PAYLD_VLAN_ETHER_TYPE_OFFSET);
     } else {
         ethernet_type_pointer = o->ethernet_type;
     }
     
     // Retrieve the value of the "EtherType" field and return it
-    return ((ethernet_type_pointer[0] << OCTET) | ethernet_type_pointer[1]);
+    UINT buff[1] = { 0x0000 };
+
+    octetsToInt(ethernet_type_pointer, 2, buff);
+    
+    return (*buff);
 }
 
 /**
  * Figures out where the "Payload" field of the provided "EthernetFrame" is and
  * returns a pointer to it
  */
-octet* EthernetFrame_getPayloadPointer(EthernetFrame* o) {
+OCTET* EthernetFrame_getPayloadPointer(EthernetFrame* o) {
     // Find our payload and get a pointer to it
     if (EthernetFrame_getVLANTag(o) != -1) {
-        return (octet*) (o->payload + PAYLD_VLAN_PAYLD_OFFSET);
+        return (OCTET*) (o->payload + PAYLD_VLAN_PAYLD_OFFSET);
     } else {
         return o->payload;
     }
@@ -122,14 +129,13 @@ octet* EthernetFrame_getPayloadPointer(EthernetFrame* o) {
  * according to the program's options.
  */
 void EthernetFrame_output(EthernetFrame* o) {
-    unsigned int tci;
+    UINT tci;
 
     // Grab the necessary peices
     char et[12] = { 0 };
     EthernetType_toString(EthernetFrame_getEthernetType(o), et, 12);
 
-    // Output a readable version of the EthernetFrame in the following format:
-    // [flags] type tag payload
+    // Output a readable version of the EthernetFrame
     output(NULL, "[    ]\t");
     output(LC_BLUE, et);
     output(NULL, "\t");
@@ -137,8 +143,7 @@ void EthernetFrame_output(EthernetFrame* o) {
         output(LC_YELLOW, "0x%04x", tci);
     output(NULL, "\t");
     
-
-    unsigned char* data_ptr = EthernetFrame_getPayloadPointer(o);
+    OCTET* data_ptr = EthernetFrame_getPayloadPointer(o);
     int data_read = 0;
     while (true) {
         if (data_read >= 1500)

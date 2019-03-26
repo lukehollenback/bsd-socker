@@ -29,6 +29,10 @@ static bool running = true;
 int main(int argc, char** argv) {
     int bpf, buffer_length;
 
+    // Make sure that our assumptions about the configuration this program has
+    // been compiled and run against ar correct and fatal if not
+    verifyConfiguration();
+
     // Specify a signal handler to catch various signals (like those sent when
     // Ctrl+C is pressed)
     signal(SIGINT, signalHandler); 
