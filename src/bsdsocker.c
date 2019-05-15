@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
     int bpf, bpf_buff_size;
 
     // Make sure that our assumptions about the configuration this program has
-    // been compiled and run against ar correct and fatal if not
+    // been compiled and run against are correct and fatal if not
     verifyConfiguration();
 
     // Specify a signal handler to catch various signals (like those sent when
@@ -54,6 +54,10 @@ int main(int argc, char** argv) {
     return 0;
 }
 
+/**
+ * Parses provided program arguments into the options singleton and validates
+ * them.
+ */
 static void parseArguments(int argc, char** argv) {
     int i;
 
