@@ -2,7 +2,7 @@
 
 ![Status: Abandoned](https://img.shields.io/badge/Status-Abandoned-red.svg)
 
-_2/9/2020 Author's Note: I do not plan to pick this project back up again. A
+_2/9/2020 Author's Note ↝ I do not plan to pick this project back up again. A
 significant amount of its functionality – such as sniffing packets containing
 payloads in a variety of formats and determining many details about them – is
 complete. Other features, such as injection, are not – but should be easy to
