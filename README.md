@@ -1,6 +1,6 @@
 # BSDSocker
 
-![Status: Abandoned](https://img.shields.io/badge/Status-Abandoned-red.svg)
+<img alt="Status: Abandoned (Partially Functional)" src="https://img.shields.io/badge/Status-Abandoned (Partially Functional)-red.svg"/>
 
 _*2/9/2020 Author's Note ↝* I do not plan to pick this project back up again. A
 significant amount of its functionality – such as sniffing packets containing
